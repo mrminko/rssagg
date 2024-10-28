@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 type apiConfig struct {
@@ -34,9 +35,12 @@ func main() {
 		log.Fatal("Cannot connect to database", err)
 	}
 
+	db := database.New(conn)
 	apiCfg := apiConfig{
-		DB: database.New(conn),
+		DB: db,
 	}
+
+	go startScraping(db, 10, time.Minute)
 
 	router := chi.NewRouter()
 	v1Router := chi.NewRouter()
@@ -55,7 +59,11 @@ func main() {
 	v1Router.Post("/users", apiCfg.handlerUserCreate)
 	v1Router.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerUserGet))
 	v1Router.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerFeedCreate))
-	v1Router.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerUserGet))
+	v1Router.Get("/feeds", apiCfg.handlerFeedGet)
+	v1Router.Post("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerFeedFollowCreate))
+	v1Router.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerFeedFollowsGet))
+	v1Router.Delete("/feed_follows/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.handlerFeedFollowDelete))
+	v1Router.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerPostsGet))
 
 	srv := &http.Server{
 		Handler: router,

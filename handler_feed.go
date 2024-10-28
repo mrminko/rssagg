@@ -9,8 +9,12 @@ import (
 	"time"
 )
 
-func (apiCfg *apiConfig) handlerFeedGet(w http.ResponseWriter, r *http.Request, user database.User) {
-	respondWithJSON(w, 200, dbUserToUser(user))
+func (apiCfg *apiConfig) handlerFeedGet(w http.ResponseWriter, r *http.Request) {
+	feeds, err := apiCfg.DB.GetFeeds(r.Context())
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Could not get feeds: %v", err))
+	}
+	respondWithJSON(w, 200, dbFeedsToFeeds(feeds))
 }
 
 func (apiCfg *apiConfig) handlerFeedCreate(w http.ResponseWriter, r *http.Request, user database.User) {
@@ -42,5 +46,5 @@ func (apiCfg *apiConfig) handlerFeedCreate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	respondWithJSON(w, 201, databaseFeedToFeed(feed))
+	respondWithJSON(w, 201, dbFeedToFeed(feed))
 }
